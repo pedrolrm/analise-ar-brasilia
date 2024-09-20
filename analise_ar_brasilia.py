@@ -3,7 +3,6 @@ import time
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# Obtendo dados de 2024
 # Substitua pela sua chave de API
 api_key = "sua chave api"
 
@@ -11,110 +10,53 @@ api_key = "sua chave api"
 lat = "-15.7801"
 lon = "-47.9292"
 
-# Definindo as datas de início e fim
-start_date = "2024-07-17 00:00:00"
-end_date = "2024-09-17 00:00:00"
+# Função para coletar dados de um período específico
+def coletar_dados(start_date, end_date, api_key):
+    start = int(time.mktime(time.strptime(start_date, "%Y-%m-%d %H:%M:%S")))
+    end = int(time.mktime(time.strptime(end_date, "%Y-%m-%d %H:%M:%S")))
 
-# Converta as datas para Unix Time
-start = int(time.mktime(time.strptime(start_date, "%Y-%m-%d %H:%M:%S")))
-end = int(time.mktime(time.strptime(end_date, "%Y-%m-%d %H:%M:%S")))
+    url = f"http://api.openweathermap.org/data/2.5/air_pollution/history?lat={lat}&lon={lon}&start={start}&end={end}&appid={api_key}"
+    
+    response = requests.get(url)
+    
+    if response.status_code == 200:
+        return response.json()
+    else:
+        raise Exception(f"Erro ao fazer requisição: {response.status_code}")
 
-# URL da API para dados históricos de qualidade do ar
-url = f"http://api.openweathermap.org/data/2.5/air_pollution/history?lat={lat}&lon={lon}&start={start}&end={end}&appid={api_key}"
+# Coletando dados de 2024
+data_2024 = coletar_dados("2024-07-17 00:00:00", "2024-09-17 00:00:00", api_key)
 
-# Fazendo a requisição para a API
-response = requests.get(url)
+# Coletando dados de 2023
+data_2023 = coletar_dados("2023-07-17 00:00:00", "2023-09-17 00:00:00", api_key)
 
-# Verificando o status da resposta
-if response.status_code == 200:
-    data_2024 = response.json()
-else:
-    print(f"Erro ao fazer requisição: {response.status_code}")
+# Função para extrair dados específicos
+def extrair_dados(data):
+    data_list = []
+    for entry in data['list']:
+        timestamp = entry['dt']
+        date_time = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(timestamp))
+        pm2_5 = entry['components']['pm2_5']
+        pm10 = entry['components']['pm10']
+        co = entry['components']['co']
+        no2 = entry['components']['no2']
+        aqi = entry['main']['aqi']
+        
+        data_list.append({
+            'Data': date_time,
+            'AQI': aqi,
+            'PM2.5': pm2_5,
+            'PM10': pm10,
+            'CO': co,
+            'NO2': no2,
+        })
+    return pd.DataFrame(data_list)
 
-# Obtendo dados de 2023
-# Substitua pela sua chave de API
-api_key = "sua chave api"
+# Convertendo os dados para DataFrames
+df_2024 = extrair_dados(data_2024)
+df_2023 = extrair_dados(data_2023)
 
-# Latitude e Longitude de Brasília
-lat = "-15.7801"
-lon = "-47.9292"
-
-# Definindo as datas de início e fim
-start_date = "2023-07-17 00:00:00"
-end_date = "2023-09-17 00:00:00"
-
-# Converta as datas para Unix Time
-start = int(time.mktime(time.strptime(start_date, "%Y-%m-%d %H:%M:%S")))
-end = int(time.mktime(time.strptime(end_date, "%Y-%m-%d %H:%M:%S")))
-
-# URL da API para dados históricos de qualidade do ar
-url = f"http://api.openweathermap.org/data/2.5/air_pollution/history?lat={lat}&lon={lon}&start={start}&end={end}&appid={api_key}"
-
-# Fazendo a requisição para a API
-response = requests.get(url)
-
-# Verificando o status da resposta
-if response.status_code == 200:
-    data_2023 = response.json()
-else:
-    print(f"Erro ao fazer requisição: {response.status_code}")
-
-# 2024
-# Inicializando uma lista para armazenar os dados
-data_list_2024 = []
-
-# Extraindo dados específicos (por exemplo, PM2.5 e PM10 ao longo do período)
-for entry in data_2024['list']:
-    timestamp = entry['dt']
-    date_time = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(timestamp))
-    pm2_5 = entry['components']['pm2_5']
-    pm10 = entry['components']['pm10']
-    co = entry['components']['co']
-    no2 = entry['components']['no2']
-    aqi = entry['main']['aqi']
-
-    # Armazenando os dados em um dicionário
-    data_list_2024.append({
-        'Data': date_time,
-        'AQI': aqi,
-        'PM2.5': pm2_5,
-        'PM10': pm10,
-        'CO': co,
-        'NO2': no2,
-    })
-
-# Convertendo a lista de dicionários para um DataFrame do pandas
-df_2024 = pd.DataFrame(data_list_2024)
-
-# 2023
-# Inicializando uma lista para armazenar os dados
-data_list_2023 = []
-
-# Extraindo dados específicos (por exemplo, PM2.5 e PM10 ao longo do período)
-for entry in data_2023['list']:
-    timestamp = entry['dt']
-    date_time = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(timestamp))
-    pm2_5 = entry['components']['pm2_5']
-    pm10 = entry['components']['pm10']
-    co = entry['components']['co']
-    no2 = entry['components']['no2']
-    aqi = entry['main']['aqi']
-
-    # Armazenando os dados em um dicionário
-    data_list_2023.append({
-        'Data': date_time,
-        'AQI': aqi,
-        'PM2.5': pm2_5,
-        'PM10': pm10,
-        'CO': co,
-        'NO2': no2,
-    })
-
-# Convertendo a lista de dicionários para um DataFrame do pandas
-df_2023 = pd.DataFrame(data_list_2023)
-
-
-# Converta a coluna 'Data' para o formato datetime para facilitar a manipulação
+# Converta a coluna 'Data' para o formato datetime
 df_2024['Data'] = pd.to_datetime(df_2024['Data'])
 df_2023['Data'] = pd.to_datetime(df_2023['Data'])
 
